@@ -1,0 +1,25 @@
+import 'package:human_body_parts/model/modelui.dart';
+
+const DataOfData = [
+  ModelUi('assets/images/one.png', 'voice/one.mp3'),
+  ModelUi('assets/images/two.png', 'voice/two.mp3'),
+  ModelUi('assets/images/three.png', 'voice/three.mp3'),
+  ModelUi('assets/images/four.png', 'voice/four.mp3'),
+  ModelUi('assets/images/five.png', 'voice/five.mp3'),
+  ModelUi('assets/images/six.png', 'voice/six.mp3'),
+  ModelUi('assets/images/seven.png', 'voice/seven.mp3'),
+  ModelUi('assets/images/eight.png', 'voice/eight.mp3'),
+  ModelUi('assets/images/nine.png', 'voice/nine.mp3'),
+  ModelUi('assets/images/ten.png', 'voice/ten.mp3'),
+  ModelUi('assets/images/eleven.png', 'voice/eleven.mp3'),
+  ModelUi('assets/images/twelve.png', 'voice/twelve.mp3'),
+  ModelUi('assets/images/thirteen.png', 'voice/thirteen.mp3'),
+  ModelUi('assets/images/fourteen.png', 'voice/fourteen.mp3'),
+  ModelUi('assets/images/fifteen.png', 'voice/fifteen.mp3'),
+  ModelUi('assets/images/sixteen.png', 'voice/sixteen.mp3'),
+  ModelUi('assets/images/seventeen.png', 'voice/seventeen.mp3'),
+  ModelUi('assets/images/eighteen.png', 'voice/eighteen.mp3'),
+  ModelUi('assets/images/nineteen.png', 'voice/nineteen.mp3'),
+  ModelUi('assets/images/twenty.png', 'voice/twenty.mp3'),
+  ModelUi('assets/images/twentyone.png', 'voice/twentyone.mp3'),
+];
