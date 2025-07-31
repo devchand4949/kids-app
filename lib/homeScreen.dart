@@ -1,150 +1,233 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:human_body_parts/data/dataoffile.dart';
+import 'package:human_body_parts/about%20screen.dart';
+import 'package:human_body_parts/interstial%20ad.dart';
+import 'package:human_body_parts/model/modelui.dart';
+import 'package:provider/provider.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../data/dataoffile.dart';
 
-class HomeScreen extends StatefulWidget {
-  @override
-  State<HomeScreen> createState() => HomeScreenState();
-}
+// ====== PROVIDER =======
+class HomeProvider extends ChangeNotifier {
+  final AudioPlayer _player = AudioPlayer();
+  int _currentIndex = 0;
+  bool _isConnected = true;
+  bool _isPlaying = false;
 
-class HomeScreenState extends State<HomeScreen> {
-  static const Color iconColor = Color(0xFFFFC4A0);
-  static const Color backgroundColor = Color(0xFF04A3B6);
-  static const Color textColor = Color(0xFF04A3B6);
+  BannerAd? _bannerAd;
+  AdWidget? _adWidget;
+  static const _bannerAdId = 'ca-app-pub-6093358640755241/5201223690';
 
-  BannerAd bAd = new BannerAd(
-      size: AdSize.banner,
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
-      listener: BannerAdListener(onAdLoaded: (ad) {
-        print('ads loaded........');
-      }, onAdFailedToLoad: (ad, err) {
-        print('ads faild........');
-        ad.dispose();
-      }, onAdOpened: (ad) {
-        print('add loaded----------');
-      }),
-      request: AdRequest());
+  bool get isPlaying => _isPlaying;
+  int get currentIndex => _currentIndex;
+  bool get isConnected => _isConnected;
+  BannerAd? get bannerAd => _bannerAd;
+  AdWidget? get adWidget => _adWidget;
+  ModelUi get currentData => DataOfData[_currentIndex];
 
-  var currentScreenIndex = 0;
-  final player = AudioPlayer();
+  HomeProvider(BuildContext context) {
+    _checkInternet();
+    _initBannerAd(context);
 
-  void next() {
-    setState(() {
-      currentScreenIndex = (currentScreenIndex + 1) % DataOfData.length;
+    _player.onPlayerComplete.listen((event) {
+      _isPlaying = false;
+      notifyListeners();
     });
-    playsound(DataOfData[currentScreenIndex].sound);
   }
 
-  void previous() {
-    setState(() {
-      currentScreenIndex = (currentScreenIndex - 1) % DataOfData.length;
+  void _checkInternet() async {
+    final result = await Connectivity().checkConnectivity();
+    _isConnected = result != ConnectivityResult.none;
+    notifyListeners();
+
+    Connectivity().onConnectivityChanged.listen((result) {
+      _isConnected = result != ConnectivityResult.none;
+      notifyListeners();
     });
-    playsound(DataOfData[currentScreenIndex].sound);
   }
 
-  void playsound(String soundpath) async {
+  void _initBannerAd(BuildContext context) async {
+    final size = await AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(
+      MediaQuery.of(context).size.width.truncate(),
+    );
+
+    if (size == null) return;
+
+    _bannerAd = BannerAd(
+      size: size,
+      adUnitId: _bannerAdId,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          _adWidget = AdWidget(ad: ad as BannerAd);
+          notifyListeners();
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+        },
+      ),
+      request: AdRequest(),
+    )..load();
+  }
+
+  void playSound(String soundPath) async {
     try {
-      await player.play(AssetSource(soundpath));
+      if (_isPlaying) {
+        await _player.stop();
+        _isPlaying = false;
+      } else {
+        await _player.play(AssetSource(soundPath));
+        _isPlaying = true;
+      }
+      notifyListeners();
     } catch (e) {
-      print('Error playing sound: $e');
+      debugPrint('Sound error: $e');
     }
   }
 
+  void stopAudio() async {
+    await _player.stop();
+    _isPlaying = false;
+    notifyListeners();
+  }
+
+  void next(BuildContext context) {
+    _isPlaying = false;
+    context.read<IntertitialAdProvider>().tryShowAd(() {
+      _currentIndex = (_currentIndex + 1) % DataOfData.length;
+      playSound(currentData.sound);
+      notifyListeners();
+    });
+  }
+
+  void previous(BuildContext context) {
+    _isPlaying = false;
+    context.read<IntertitialAdProvider>().tryShowAd(() {
+      _currentIndex = (_currentIndex - 1 + DataOfData.length) % DataOfData.length;
+      playSound(currentData.sound);
+      notifyListeners();
+    });
+  }
+}
+
+// ====== SCREEN =======
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({super.key});
+
   @override
-  Widget build(context) {
-    final currentScreen = DataOfData[currentScreenIndex];
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => HomeProvider(context),
+      child: HomeScreenBody(),
+    );
+  }
+}
+
+class HomeScreenBody extends StatelessWidget {
+  HomeScreenBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = Provider.of<HomeProvider>(context);
+    final data = provider.currentData;
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Color(0xFF04A3B6),
+        backgroundColor: const Color(0xFF04A3B6),
         centerTitle: true,
-        title: Text(
-          'Human Body parts',
+        title: const Text(
+          'Human Body Parts',
           style: TextStyle(
             color: Color(0xFFFFC4A0),
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          IconButton(
+            onPressed: (){
+              final provider = context.read<HomeProvider>();
+              if (provider.isPlaying) {
+                provider.stopAudio(); // <-- stop audio if playing
+              }
+          Navigator.push(context, MaterialPageRoute(builder: (_) => AboutScreen()));},
+            icon:  Icon(Icons.read_more_outlined, color: Color(0xFFFFC4A0),size: isTablet ? 35 : 30,),
+          ),
+        ],
       ),
       body: Container(
-        color: backgroundColor,
-        padding: EdgeInsets.only(top: 10, bottom: 0, left: 10, right: 10),
+        color: const Color(0xFF04A3B6),
+        padding: EdgeInsets.all(isTablet ? 24 : 12),
         child: Column(
           children: [
             Expanded(
-              child: Container(
-                child:
-                    Image.asset(currentScreen.img), //dynamic  one by on fetch
+              child: Image.asset(
+                data.img,
+                width: double.infinity,
+                fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(
-              height: 30,
+            SizedBox(height: isTablet ? 30 : 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                double buttonSize = isTablet ? 80 : constraints.maxWidth * 0.18;
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _circleButton(
+                      icon: Icons.arrow_back,
+                      size: buttonSize,
+                      onPressed: () => provider.previous(context),
+                    ),
+                    _circleButton(
+                      icon: provider.isPlaying
+                          ? Icons.stop_circle
+                          : Icons.not_started_outlined,
+                      size: buttonSize,
+                      backgroundColor: const Color(0xFFEAB595),
+                      onPressed: () => context.read<IntertitialAdProvider>().tryShowAd(() {
+                        provider.playSound(data.sound);
+                      }),
+                    ),
+                    _circleButton(
+                      icon: Icons.arrow_forward,
+                      size: buttonSize,
+                      onPressed: () => provider.next(context),
+                    ),
+                  ],
+                );
+              },
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                //previous button function fetch from widgetfun file............
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.all(10),
-                        backgroundColor: iconColor,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50))),
-                    onPressed: () => previous(), //argument type function
-                    child: Icon(
-                      Icons.arrow_back, //argument type function
-                      size: 50,
-                      color: textColor,
-                      // color: color(0xC9EBB796),
-                    )),
-                //play button function fetch from playsound fun...........
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.all(10),
-                        backgroundColor: Color(0xFFEAB595),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50))),
-                    onPressed: () => playsound(DataOfData[currentScreenIndex]
-                        .sound), //argument type function
-                    child: Icon(
-                      Icons.not_started_outlined, //argument type function
-                      size: 50,
-                      color: textColor,
-                      // color: color(0xC9EBB796),
-                    )),
-                //next button function fetch from widgetfun file............
-                ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.all(10),
-                        backgroundColor: iconColor,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(50))),
-                    onPressed: () => previous(), //argument type function
-                    child: Icon(
-                      Icons.arrow_forward, //argument type function
-                      size: 50,
-                      color: textColor, // color: color(0xC9EBB796),
-                    )),
-              ],
-            ),
-            const SizedBox(
-              height: 10,
-            ),
-            // Container(
-            //   height: 50,
-            //   color: Colors.white,
-            //   width: double.infinity,
-            // )
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        child: AdWidget(
-          ad: bAd..load(),
-          key: UniqueKey(),
-        ),
+      bottomNavigationBar: provider.isConnected && provider.adWidget != null
+          ? Container(
+        height: 60,
+        width: provider.bannerAd!.size.width.toDouble(),
+        color: Colors.white,
+        child: provider.adWidget!,
+      )
+          : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _circleButton({
+    required IconData icon,
+    required double size,
+    required VoidCallback onPressed,
+    Color backgroundColor = const Color(0xFFFFC4A0),
+    Color iconColor = const Color(0xFF04A3B6),
+  }) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor,
+        shape: const CircleBorder(),
+        padding: EdgeInsets.all(size * 0.2),
       ),
+      onPressed: onPressed,
+      child: Icon(icon, size: size * 0.6, color: iconColor),
     );
   }
 }

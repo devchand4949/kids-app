@@ -1,4 +1,4 @@
-package com.example.human_body_parts
+package com.humanbodyparts.kidslearning.app
 
 import io.flutter.embedding.android.FlutterActivity
 

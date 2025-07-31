@@ -1,8 +1,15 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.humanbodyparts.kidslearning.app">
     <application
-        android:label="human_body_parts"
+        android:label="Human Body Parts"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
+
+        <!-- Sample AdMob app ID: ca-app-pub-3940256099942544~3347511713 -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-6093358640755241~6598065848"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -17,10 +24,6 @@
                  while the Flutter UI initializes. After that, this theme continues
                  to determine the Window background behind the Flutter UI. -->
 
-            <!-- Sample AdMob app ID: ca-app-pub-3940256099942544~3347511713 -->
-            <meta-data
-                android:name="com.google.android.gms.ads.APPLICATION_ID"
-                android:value="ca-app-pub-3940256099942544~3347511713"/>
 
 
             <meta-data
